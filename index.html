@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Spaces - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Sora:wght@100..800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --black: #111219;
+    --dark-text: #010101;
+    --muted: #757575;
+    --border: #e0e0e0;
+    --border-light: #efefef;
+    --bg-light: #f7f7f7;
+    --bg-page: #fafafa;
+    --white: #ffffff;
+    --font-sora: 'Sora', sans-serif;
+    --font-dm: 'DM Sans', sans-serif;
+    --status-hot: #c0392b;
+    --status-warm: #e67e22;
+    --status-cold: #95a5a6;
+    --green: #2d8a4e;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font-dm);
+    background: var(--bg-page);
+    color: var(--dark-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP NAV ── */
+  .top-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.4rem; height: 64px;
+    background: var(--black); border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  }
+  .logo {
+    font-family: var(--font-sora); font-size: 1.3rem; font-weight: 700;
+    color: var(--white); letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+  }
+  .logo span { font-weight: 400; }
+  .nav-links { display: flex; gap: 0; list-style: none; }
+  .nav-links li { position: relative; }
+  .nav-links a {
+    font-family: var(--font-dm); font-size: 0.9rem; font-weight: 400;
+    color: rgba(255,255,255,0.6); text-decoration: none;
+    padding: 1.3rem 1.2rem; display: block; transition: color 0.2s;
+    position: relative; cursor: pointer;
+  }
+  .nav-links a::after {
+    content: ''; width: 0; height: 4px; background: var(--white);
+    position: absolute; bottom: 0; left: 0; transition: width 0.3s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+  .nav-links a.active { color: var(--white); font-weight: 800; }
+  .nav-date { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+
+  /* ── LAYOUT ── */
+  .shell { display: flex; margin-top: 64px; min-height: calc(100vh - 64px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 230px; min-width: 230px; background: var(--white);
+    border-right: 1px solid var(--border); padding: 2rem 0;
+    position: fixed; top: 64px; bottom: 0; left: 0;
+    overflow-y: auto; display: flex; flex-direction: column;
+  }
+  .sidebar-section { padding: 0 1.5rem; margin-bottom: 2.2rem; }
+  .sidebar-label {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.8rem;
+  }
+  .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 0.1rem; }
+  .sidebar-nav a {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 0.85rem; font-size: 0.88rem; font-weight: 400;
+    color: var(--dark-text); text-decoration: none;
+    transition: background 0.15s; position: relative; cursor: pointer;
+  }
+  .sidebar-nav a:hover { background: var(--bg-light); }
+  .sidebar-nav a.active { font-weight: 800; color: var(--black); }
+  .sidebar-nav a.active::after {
+    content: ''; position: absolute; left: 0; top: 0;
+    width: 4px; height: 100%; background: var(--black);
+  }
+  .sidebar-nav .icon { width: 18px; text-align: center; font-size: 0.85rem; color: var(--muted); }
+  .sidebar-footer {
+    padding: 1.5rem; border-top: 1px solid var(--border-light); margin-top: auto;
+  }
+  .sidebar-footer p { font-size: 0.72rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── MAIN ── */
+  .main { margin-left: 230px; flex: 1; padding: 2.2rem 2.6rem 3rem; }
+  .page-view { display: none; }
+  .page-view.active { display: block; }
+  .page-header { margin-bottom: 1.8rem; }
+  .page-title {
+    font-family: var(--font-sora); font-size: 1.8rem; font-weight: 700;
+    color: var(--black); letter-spacing: 0.7px;
+  }
+  .page-subtitle { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
+  .page-updated { font-size: 0.72rem; color: var(--muted); margin-top: 0.4rem; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 1.4rem 1.5rem 1.2rem; position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 100%; height: 4px; background: var(--black);
+  }
+  .kpi-label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.6rem;
+  }
+  .kpi-value {
+    font-family: var(--font-sora); font-size: 2rem; font-weight: 700;
+    color: var(--black); line-height: 1; margin-bottom: 0.4rem;
+  }
+  .kpi-delta {
+    font-size: 0.76rem; font-weight: 500; display: flex;
+    align-items: center; gap: 0.3rem; margin-bottom: 0.45rem;
+  }
+  .kpi-delta.up { color: var(--green); }
+  .kpi-delta.down { color: var(--status-hot); }
+  .kpi-delta.neutral { color: var(--muted); }
+  .kpi-target {
+    font-size: 0.68rem; color: var(--muted);
+    border-top: 1px solid var(--border-light); padding-top: 0.4rem; margin-top: 0.1rem;
+  }
+
+  /* ── INSIGHT CALLOUT ── */
+  .insight-callout {
+    background: var(--white); border: 1px solid var(--border);
+    border-left: 4px solid var(--black); padding: 1.1rem 1.4rem;
+    margin-bottom: 2.2rem; display: flex; gap: 0.8rem; align-items: flex-start;
+  }
+  .insight-icon {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--black); white-space: nowrap; padding-top: 0.1rem;
+  }
+  .insight-text { font-size: 0.85rem; color: var(--dark-text); line-height: 1.55; }
+
+  /* ── SECTION HEADERS ── */
+  .section-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 1rem; padding-bottom: 0.7rem; border-bottom: 2px solid var(--black);
+  }
+  .section-title {
+    font-family: var(--font-sora); font-size: 1.25rem; font-weight: 600;
+    color: var(--black); letter-spacing: 0.5px;
+  }
+  .section-count { font-size: 0.76rem; color: var(--muted); }
+
+  /* ── TABLES ── */
+  .table-wrapper {
+    background: var(--white); border: 1px solid var(--border);
+    margin-bottom: 2.8rem; overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  thead { background: var(--bg-light); border-bottom: 1px solid var(--border); }
+  th {
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); text-align: left;
+    padding: 0.85rem 1rem; white-space: nowrap;
+  }
+  td {
+    padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-light);
+    color: var(--dark-text); vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-light); }
+  .company-name { font-weight: 600; }
+  .contact-name { color: var(--muted); font-size: 0.82rem; }
+  .text-right { text-align: right; }
+  .text-bold { font-weight: 700; }
+
+  .status-badge {
+    display: inline-block; padding: 0.2rem 0.65rem; font-size: 0.66rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid;
+  }
+  .status-hot { color: var(--status-hot); border-color: var(--status-hot); background: rgba(192,57,43,0.06); }
+  .status-warm { color: var(--status-warm); border-color: var(--status-warm); background: rgba(230,126,34,0.06); }
+  .status-cold { color: var(--status-cold); border-color: var(--status-cold); background: rgba(149,165,166,0.08); }
+  .status-green { color: var(--green); border-color: var(--green); background: rgba(45,138,78,0.06); }
+
+  /* ── PROJECT CARDS ── */
+  .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .project-card {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 1.4rem 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .project-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  .project-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+  .project-name {
+    font-family: var(--font-sora); font-size: 1.02rem; font-weight: 600;
+    line-height: 1.3; color: var(--black);
+  }
+  .project-type-badge {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.2rem 0.5rem;
+    background: var(--black); color: var(--white); white-space: nowrap; flex-shrink: 0;
+  }
+  .project-meta { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+  .project-meta strong { color: var(--dark-text); font-weight: 500; }
+  .project-phase { display: flex; align-items: center; gap: 0.6rem; }
+  .phase-label {
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--black); font-size: 0.63rem; min-width: 110px;
+  }
+  .progress-bar-container { flex: 1; height: 6px; background: var(--border-light); overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--black); transition: width 0.5s ease; }
+  .progress-pct {
+    font-family: var(--font-sora); font-size: 0.76rem; font-weight: 700;
+    color: var(--black); min-width: 34px; text-align: right;
+  }
+  .project-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 0.65rem; border-top: 1px solid var(--border-light);
+    font-size: 0.76rem; color: var(--muted);
+  }
+  .pm-name { font-weight: 600; color: var(--dark-text); }
+  .deadline { font-weight: 500; color: var(--dark-text); }
+  .deadline.soon { color: var(--status-hot); font-weight: 700; }
+
+  /* ── TEAM ── */
+  .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .team-card {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .team-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  .team-avatar {
+    width: 48px; height: 48px; background: var(--black); color: var(--white);
+    font-family: var(--font-sora); font-weight: 700; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 0.3rem;
+  }
+  .team-name { font-family: var(--font-sora); font-size: 1rem; font-weight: 600; color: var(--black); }
+  .team-role { font-size: 0.8rem; color: var(--muted); }
+  .team-stats {
+    display: flex; gap: 1.2rem; margin-top: 0.4rem;
+    padding-top: 0.6rem; border-top: 1px solid var(--border-light); font-size: 0.75rem;
+  }
+  .team-stat-item { display: flex; flex-direction: column; gap: 0.1rem; }
+  .team-stat-val { font-family: var(--font-sora); font-weight: 700; color: var(--black); font-size: 0.9rem; }
+  .team-stat-label { color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ── FINANCE CHARTS (CSS-only bars) ── */
+  .fin-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 2.2rem; }
+  .fin-panel {
+    background: var(--white); border: 1px solid var(--border); padding: 1.4rem 1.5rem;
+  }
+  .fin-panel-title {
+    font-family: var(--font-sora); font-size: 0.95rem; font-weight: 600;
+    color: var(--black); margin-bottom: 1rem; letter-spacing: 0.3px;
+  }
+  .bar-chart-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.6rem; font-size: 0.8rem;
+  }
+  .bar-chart-label { min-width: 110px; color: var(--muted); font-size: 0.76rem; }
+  .bar-chart-track { flex: 1; height: 10px; background: var(--border-light); overflow: hidden; }
+  .bar-chart-fill { height: 100%; background: var(--black); }
+  .bar-chart-fill.accent { background: var(--status-warm); }
+  .bar-chart-fill.green { background: var(--green); }
+  .bar-chart-val { min-width: 60px; text-align: right; font-weight: 600; font-size: 0.8rem; }
+
+  /* ── BUILDER ── */
+  .builder-layout { display: flex; gap: 1.2rem; min-height: 600px; }
+  .builder-palette {
+    width: 220px; min-width: 220px; background: var(--white);
+    border: 1px solid var(--border); padding: 1.2rem; flex-shrink: 0;
+  }
+  .builder-palette h3 {
+    font-family: var(--font-sora); font-size: 0.85rem; font-weight: 700;
+    color: var(--black); margin-bottom: 0.8rem; letter-spacing: 0.3px;
+  }
+  .palette-section-label {
+    font-size: 0.62rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin: 1rem 0 0.5rem;
+  }
+  .palette-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.55rem 0.7rem; margin-bottom: 0.3rem;
+    border: 1px solid var(--border-light); cursor: grab;
+    font-size: 0.8rem; font-weight: 500; color: var(--dark-text);
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .palette-item:hover { border-color: var(--black); background: var(--bg-light); }
+  .palette-item:active { cursor: grabbing; }
+  .palette-icon { font-size: 1rem; width: 20px; text-align: center; color: var(--muted); }
+
+  .builder-canvas {
+    flex: 1; background: var(--bg-light); border: 2px dashed var(--border);
+    padding: 1.2rem; min-height: 500px; position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .builder-canvas.drag-over { border-color: var(--black); background: #f0edea; }
+  .builder-canvas-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; min-height: 400px; color: var(--muted); text-align: center;
+  }
+  .builder-canvas-empty .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; color: var(--border); }
+  .builder-canvas-empty h3 {
+    font-family: var(--font-sora); font-size: 1rem; font-weight: 600;
+    color: var(--black); margin-bottom: 0.3rem;
+  }
+  .builder-canvas-empty p { font-size: 0.82rem; }
+
+  .canvas-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+  }
+  .canvas-widget {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 1.2rem 1.3rem; position: relative;
+    animation: fadeIn 0.25s ease;
+  }
+  .canvas-widget.full-width { grid-column: 1 / -1; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .widget-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 0.7rem;
+  }
+  .widget-title {
+    font-family: var(--font-sora); font-size: 0.85rem; font-weight: 600;
+    color: var(--black); letter-spacing: 0.2px;
+  }
+  .widget-remove {
+    background: none; border: none; cursor: pointer;
+    font-size: 1rem; color: var(--muted); padding: 0 0.2rem;
+    transition: color 0.15s; line-height: 1;
+  }
+  .widget-remove:hover { color: var(--status-hot); }
+  .widget-body { font-size: 0.82rem; color: var(--dark-text); }
+  .widget-body .kpi-value { font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .widget-body .kpi-delta { margin-bottom: 0; }
+  .widget-body table { font-size: 0.78rem; }
+  .widget-body th { font-size: 0.62rem; padding: 0.5rem 0.6rem; }
+  .widget-body td { padding: 0.45rem 0.6rem; }
+
+  .mini-bar { display: flex; align-items: flex-end; gap: 3px; height: 48px; margin-top: 0.5rem; }
+  .mini-bar-col {
+    flex: 1; background: var(--black); min-width: 8px;
+    transition: height 0.3s ease;
+  }
+  .mini-bar-col:nth-child(even) { opacity: 0.6; }
+
+  .builder-actions {
+    display: flex; gap: 0.6rem; margin-bottom: 1.2rem;
+  }
+  .btn {
+    font-family: var(--font-dm); font-size: 0.78rem; font-weight: 600;
+    padding: 0.5rem 1.1rem; border: 1px solid var(--black);
+    cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .btn-primary { background: var(--black); color: var(--white); }
+  .btn-primary:hover { background: #2a2b33; }
+  .btn-secondary { background: var(--white); color: var(--black); }
+  .btn-secondary:hover { background: var(--bg-light); }
+
+  /* ── PLACEHOLDER ── */
+  .reports-empty {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 4rem 2rem; text-align: center;
+  }
+  .reports-empty-icon { font-size: 2.5rem; color: var(--border); margin-bottom: 1rem; }
+  .reports-empty h3 {
+    font-family: var(--font-sora); font-size: 1.1rem; font-weight: 600;
+    color: var(--black); margin-bottom: 0.4rem;
+  }
+  .reports-empty p { font-size: 0.85rem; color: var(--muted); }
+
+  /* ── VIEW ALL LINK ── */
+  .view-all-link {
+    display: inline-block; margin-top: 1rem; font-size: 0.8rem;
+    font-weight: 600; color: var(--black); text-decoration: none;
+    cursor: pointer; letter-spacing: 0.03em;
+    border-bottom: 2px solid var(--black); padding-bottom: 0.15rem;
+    transition: opacity 0.2s;
+  }
+  .view-all-link:hover { opacity: 0.6; }
+
+  /* ── SORTABLE HEADERS ── */
+  th.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 1.6rem; -webkit-user-select: none; }
+  th.sortable[tabindex] { outline: none; }
+  th.sortable::after {
+    content: '\2195'; position: absolute; right: 0.5rem; top: 50%;
+    transform: translateY(-50%); font-size: 0.7rem; color: var(--border); transition: color 0.15s;
+  }
+  th.sortable:hover::after { color: var(--black); }
+  th.sortable.asc::after { content: '\2191'; color: var(--black); }
+  th.sortable.desc::after { content: '\2193'; color: var(--black); }
+
+  /* ── ABBREVIATION TOOLTIPS ── */
+  abbr[title] { text-decoration: underline dotted var(--muted); cursor: help; text-underline-offset: 2px; }
+
+  /* ── FOCUS / KEYBOARD ── */
+  a:focus-visible, button:focus-visible, th.sortable:focus-visible {
+    outline: 2px solid var(--black); outline-offset: 2px;
+  }
+  .nav-links a:focus-visible { outline-color: var(--white); }
+  .sidebar-nav a:focus-visible { outline-color: var(--black); }
+
+  /* ── EXPORT BUTTON ── */
+  .export-bar {
+    display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1.2rem;
+  }
+  .btn-export {
+    font-family: var(--font-dm); font-size: 0.72rem; font-weight: 600;
+    padding: 0.4rem 0.9rem; border: 1px solid var(--border);
+    background: var(--white); color: var(--muted); cursor: pointer;
+    transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .btn-export:hover { border-color: var(--black); color: var(--black); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    .projects-grid, .team-grid { grid-template-columns: repeat(2, 1fr); }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .fin-row { grid-template-columns: 1fr; }
+    .canvas-grid { grid-template-columns: 1fr; }
+    .canvas-widget.full-width { grid-column: auto; }
+  }
+  @media print {
+    .top-nav { position: static; background: var(--white); border-bottom: 2px solid var(--black); }
+    .nav-links, .nav-date, .export-bar { display: none; }
+    .logo { color: var(--black); }
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 1rem; }
+    .shell { margin-top: 0; }
+    .kpi-card:hover, .project-card:hover, .team-card:hover { transform: none; box-shadow: none; }
+    .page-view { page-break-inside: avoid; }
+    .builder-layout { display: none; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .projects-grid, .team-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr; }
+    .top-nav { padding: 0 1.2rem; }
+    .main { padding: 1.5rem 1.2rem 2rem; }
+    .builder-layout { flex-direction: column; }
+    .builder-palette { width: 100%; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="logo" onclick="switchView('dashboard')">AI <span>Spaces</span></div>
+  <ul class="nav-links">
+    <li><a data-view="dashboard" onclick="switchView('dashboard')">Overview</a></li>
+    <li><a data-view="prospecting" onclick="switchView('prospecting')">Prospecting</a></li>
+    <li><a data-view="projects" onclick="switchView('projects')">Projects</a></li>
+    <li><a data-view="finances" onclick="switchView('finances')">Finances</a></li>
+    <li><a data-view="team" onclick="switchView('team')">Team</a></li>
+  </ul>
+  <div class="nav-date">Data as of Mar 15, 2026</div>
+</nav>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">The Business</div>
+      <ul class="sidebar-nav">
+        <li><a data-view="dashboard" onclick="switchView('dashboard')"><span class="icon">&#9632;</span> Overview</a></li>
+        <li><a data-view="prospecting" onclick="switchView('prospecting')"><span class="icon">&#10140;</span> Prospecting</a></li>
+        <li><a data-view="projects" onclick="switchView('projects')"><span class="icon">&#9733;</span> Active Projects</a></li>
+        <li><a data-view="finances" onclick="switchView('finances')"><span class="icon">&#9644;</span> Finances</a></li>
+        <li><a data-view="team" onclick="switchView('team')"><span class="icon">&#9881;</span> Team</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tools</div>
+      <ul class="sidebar-nav">
+        <li><a data-view="calendar" onclick="switchView('calendar')"><span class="icon">&#9670;</span> Calendar</a></li>
+        <li><a data-view="reports" onclick="switchView('reports')"><span class="icon">&#9993;</span> Reports</a></li>
+        <li><a data-view="builder" onclick="switchView('builder')"><span class="icon">&#9998;</span> Build Dashboard</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-footer">
+      <p>AI Spaces LLC<br>Miami, FL<br>aispaces.ai</p>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <div id="view-dashboard" class="page-view active">
+      <div class="page-header">
+        <h1 class="page-title">Q1 Pipeline Strong; 2 Projects Closing This Month</h1>
+        <p class="page-subtitle">Studio overview for AI Spaces, Miami</p>
+        <p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p>
+      </div>
+      <div class="export-bar"><button class="btn-export" onclick="window.print()">&#9112; Print / PDF</button></div>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Active Projects</div>
+          <div class="kpi-value">6</div>
+          <span class="kpi-delta up">&#9650; 2 from last quarter</span>
+          <div class="kpi-target">Target: 8 by end of Q2</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pipeline Value</div>
+          <div class="kpi-value">$4.7M</div>
+          <span class="kpi-delta up">&#9650; 18% vs. Q4 2025</span>
+          <div class="kpi-target">Q1 target: $4.0M (exceeded)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Project Size</div>
+          <div class="kpi-value">8,200 ft&sup2;</div>
+          <span class="kpi-delta neutral">&#8212; Steady vs. prior quarter</span>
+          <div class="kpi-target">Studio benchmark: 7,500 ft&sup2;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Closing This Month</div>
+          <div class="kpi-value">2</div>
+          <span class="kpi-delta down">&#9660; 1 at risk (deadline slip)</span>
+          <div class="kpi-target">Casa Nostra due Mar 28</div>
+        </div>
+      </div>
+      <div class="insight-callout">
+        <div class="insight-icon">Insight</div>
+        <div class="insight-text">Two hot leads (Meridian Group, Alma Hospitality) together represent $1.6M in potential new revenue. Both were contacted within the last 48 hours. Converting these two would push Q2 pipeline above $6M, exceeding the annual growth plan by 15%.</div>
+      </div>
+      <div class="section-header">
+        <h2 class="section-title">Prospecting: 2 Hot Leads Need Follow-up This Week</h2>
+        <span class="section-count">Showing top 3 of 8</span>
+      </div>
+      <div class="table-wrapper" id="prospect-table-dashboard"></div>
+      <a class="view-all-link" onclick="switchView('prospecting')">View all 8 leads &#8594;</a>
+
+      <div class="section-header" style="margin-top:2.2rem;">
+        <h2 class="section-title">Active Projects: Casa Nostra and Meridian Tower Closing Soon</h2>
+        <span class="section-count">Showing soonest 3 of 6</span>
+      </div>
+      <div class="projects-grid" id="projects-grid-dashboard"></div>
+      <a class="view-all-link" onclick="switchView('projects')">View all 6 projects &#8594;</a>
+    </div>
+
+    <!-- ═══════════ PROJECTS ═══════════ -->
+    <div id="view-projects" class="page-view">
+      <div class="page-header">
+        <h1 class="page-title">6 Projects in Progress; Casa Nostra at 88%, Nearing Delivery</h1>
+        <p class="page-subtitle">All active projects across the studio, sorted by phase</p>
+        <p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-label">In Schematic</div><div class="kpi-value">1</div><span class="kpi-delta neutral">Wynwood Loft</span></div>
+        <div class="kpi-card"><div class="kpi-label">In Design Dev</div><div class="kpi-value">2</div><span class="kpi-delta neutral">Coral Gables, South Beach</span></div>
+        <div class="kpi-card"><div class="kpi-label">In Construction Docs</div><div class="kpi-value">2</div><span class="kpi-delta neutral">Meridian, Grove</span></div>
+        <div class="kpi-card"><div class="kpi-label">In Build</div><div class="kpi-value">1</div><span class="kpi-delta up">Casa Nostra at 88%</span></div>
+      </div>
+      <div class="insight-callout">
+        <div class="insight-icon">Insight</div>
+        <div class="insight-text">Casa Nostra (88%) and Meridian Tower (72%) are the two furthest along. Both have deadlines within the next 18 days. Wynwood Loft is still in schematic at 18%, giving the team runway to absorb any spillover from the closing projects.</div>
+      </div>
+      <div class="section-header"><h2 class="section-title">All Active Projects</h2><span class="section-count">6 projects</span></div>
+      <div class="projects-grid" id="projects-grid-projects"></div>
+    </div>
+
+    <!-- ═══════════ PROSPECTING ═══════════ -->
+    <div id="view-prospecting" class="page-view">
+      <div class="page-header">
+        <h1 class="page-title">8 Leads in Pipeline; 2 Hot Leads Need Follow-up This Week</h1>
+        <p class="page-subtitle">Lead pipeline and business development activity</p>
+        <p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-label">Total Leads</div><div class="kpi-value">8</div><span class="kpi-delta up">&#9650; 3 new this month</span><div class="kpi-target">Q1 target: 10 leads</div></div>
+        <div class="kpi-card"><div class="kpi-label">Hot Leads</div><div class="kpi-value">2</div><span class="kpi-delta up">$1.6M combined value</span><div class="kpi-target">Both contacted &lt;48 hrs ago</div></div>
+        <div class="kpi-card"><div class="kpi-label">Pipeline Total</div><div class="kpi-value">$6.96M</div><span class="kpi-delta up">&#9650; 24% vs. Q4 2025</span><div class="kpi-target">Weighted: ~$3.2M (est.)</div></div>
+        <div class="kpi-card"><div class="kpi-label">Cold Leads (&gt;14 Days)</div><div class="kpi-value">3</div><span class="kpi-delta down">&#9660; Need re-engagement</span><div class="kpi-target">Atlas, Sunridge, Osborn</div></div>
+      </div>
+      <div class="insight-callout">
+        <div class="insight-icon">Insight</div>
+        <div class="insight-text">Three cold leads (Atlas Ventures, Sunridge Montessori, The Osborn Hotel) have not been contacted in 15+ days. Combined value: $2.25M. Re-engaging even one could significantly impact Q2 projections.</div>
+      </div>
+      <div class="section-header"><h2 class="section-title">Full Pipeline, Sorted by Temperature</h2><span class="section-count">8 leads in pipeline</span></div>
+      <div class="table-wrapper" id="prospect-table-prospecting"></div>
+    </div>
+
+    <!-- ═══════════ FINANCES ═══════════ -->
+    <div id="view-finances" class="page-view">
+      <div class="page-header">
+        <h1 class="page-title">Finances: Revenue On Track, Margins Holding at 32%</h1>
+        <p class="page-subtitle">Financial summary for Q1 2026 (Jan - Mar)</p>
+        <p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p>
+      </div>
+      <div class="export-bar"><button class="btn-export" onclick="window.print()">&#9112; Print / PDF</button></div>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Q1 Revenue</div>
+          <div class="kpi-value">$1.42M</div>
+          <span class="kpi-delta up">&#9650; 22% vs. Q1 2025</span>
+          <div class="kpi-target">Annual target: $5.8M (on pace for $5.68M)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Q1 Expenses</div>
+          <div class="kpi-value">$966K</div>
+          <span class="kpi-delta neutral">&#8212; In line with budget</span>
+          <div class="kpi-target">Budget: $980K / Under by $14K</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Net Profit</div>
+          <div class="kpi-value">$454K</div>
+          <span class="kpi-delta up">&#9650; 28% vs. Q1 2025</span>
+          <div class="kpi-target">Profit margin: 32% (target: 30%)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Outstanding Receivables</div>
+          <div class="kpi-value">$287K</div>
+          <span class="kpi-delta down">&#9660; 2 invoices overdue</span>
+          <div class="kpi-target">Avg days to collect: 34 (target: &lt;30)</div>
+        </div>
+      </div>
+
+      <div class="insight-callout">
+        <div class="insight-icon">Insight</div>
+        <div class="insight-text">Profit margin is 2pp above the 30% target, driven by efficient staffing on the Casa Nostra and Meridian Tower projects. The two overdue invoices (Coral Capital, Brickell Academy) total $147K. Collecting these would bring receivables within the 30-day target.</div>
+      </div>
+
+      <div class="fin-row">
+        <div class="fin-panel">
+          <div class="fin-panel-title">Meridian Leads Q1 Billing at $380K</div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Meridian Tower</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:78%"></div></div><span class="bar-chart-val">$380K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Casa Nostra</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:62%"></div></div><span class="bar-chart-val">$298K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Coral Gables</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:48%"></div></div><span class="bar-chart-val">$235K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Grove Montessori</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:42%"></div></div><span class="bar-chart-val">$204K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">South Beach Bar</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:35%"></div></div><span class="bar-chart-val">$172K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Wynwood Loft</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:27%"></div></div><span class="bar-chart-val">$131K</span></div>
+        </div>
+        <div class="fin-panel">
+          <div class="fin-panel-title">Salaries Drive 55% of Q1 Spend</div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Salaries</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:55%"></div></div><span class="bar-chart-val">$528K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Subcontractors</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:22%"></div></div><span class="bar-chart-val">$214K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Office / Lease</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:9%"></div></div><span class="bar-chart-val">$87K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Software / Tools</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:5%"></div></div><span class="bar-chart-val">$48K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Marketing</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:5%"></div></div><span class="bar-chart-val">$52K</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Other</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:4%"></div></div><span class="bar-chart-val">$37K</span></div>
+        </div>
+      </div>
+
+      <div class="fin-row">
+        <div class="fin-panel">
+          <div class="fin-panel-title">Revenue Growing Monthly; March on Pace for $522K</div>
+          <div class="bar-chart-row"><span class="bar-chart-label">January</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:70%"></div></div><span class="bar-chart-val">$420K rev</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label"></span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:55%"></div></div><span class="bar-chart-val">$330K exp</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">February</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:80%"></div></div><span class="bar-chart-val">$478K rev</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label"></span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:52%"></div></div><span class="bar-chart-val">$312K exp</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">March (proj.)</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:88%"></div></div><span class="bar-chart-val">$522K rev</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label"></span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:54%"></div></div><span class="bar-chart-val">$324K exp</span></div>
+        </div>
+        <div class="fin-panel">
+          <div class="fin-panel-title">Meridian and Casa Nostra Top Margins at 38% and 35%</div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Meridian Tower</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:38%"></div></div><span class="bar-chart-val">38%</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Casa Nostra</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:35%"></div></div><span class="bar-chart-val">35%</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Coral Gables</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:30%"></div></div><span class="bar-chart-val">30%</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Grove Montessori</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:28%"></div></div><span class="bar-chart-val">28%</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">South Beach Bar</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:33%"></div></div><span class="bar-chart-val">33%</span></div>
+          <div class="bar-chart-row"><span class="bar-chart-label">Wynwood Loft</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:24%"></div></div><span class="bar-chart-val">24%</span></div>
+        </div>
+      </div>
+
+      <div class="section-header"><h2 class="section-title">2 Invoices Overdue Totaling $147K</h2><span class="section-count">5 invoices</span></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Invoice #</th><th>Client</th><th>Project</th><th>Amount</th><th>Issued</th><th>Due</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="text-bold">INV-2026-041</td><td>Coral Capital</td><td>Office Fit-out</td><td class="text-right">$82,000</td><td>Feb 10</td><td>Mar 10</td><td><span class="status-badge status-hot">Overdue</span></td></tr>
+            <tr><td class="text-bold">INV-2026-038</td><td>Brickell Academy</td><td>Learning Center</td><td class="text-right">$65,000</td><td>Feb 1</td><td>Mar 1</td><td><span class="status-badge status-hot">Overdue</span></td></tr>
+            <tr><td class="text-bold">INV-2026-045</td><td>Meridian Group</td><td>Lobby Redesign</td><td class="text-right">$95,000</td><td>Mar 1</td><td>Mar 31</td><td><span class="status-badge status-warm">Due Soon</span></td></tr>
+            <tr><td class="text-bold">INV-2026-047</td><td>The Osborn Hotel</td><td>Boutique Bar</td><td class="text-right">$45,000</td><td>Mar 5</td><td>Apr 5</td><td><span class="status-badge status-green">Current</span></td></tr>
+            <tr><td class="text-bold">INV-2026-048</td><td>Sunridge Montessori</td><td>Campus Expansion</td><td class="text-right">$72,000</td><td>Mar 10</td><td>Apr 10</td><td><span class="status-badge status-green">Current</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ TEAM ═══════════ -->
+    <div id="view-team" class="page-view">
+      <div class="page-header">
+        <h1 class="page-title">3 PMs, Balanced Workload; On-time Delivery Up 5pp to 83%</h1>
+        <p class="page-subtitle">Project managers and studio leads</p>
+        <p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p>
+      </div>
+      <div class="kpi-row" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="kpi-card"><div class="kpi-label">Team Size</div><div class="kpi-value">3</div><span class="kpi-delta neutral">Project managers</span></div>
+        <div class="kpi-card"><div class="kpi-label">Avg Projects per PM</div><div class="kpi-value">2.0</div><span class="kpi-delta neutral">Balanced workload</span><div class="kpi-target">Capacity: 3 per PM</div></div>
+        <div class="kpi-card"><div class="kpi-label">On-time Delivery Rate</div><div class="kpi-value">83%</div><span class="kpi-delta up">&#9650; 5pp vs. last year</span><div class="kpi-target">Target: 90%</div></div>
+      </div>
+      <div class="insight-callout">
+        <div class="insight-icon">Insight</div>
+        <div class="insight-text">All three PMs are at 2 projects each with a capacity ceiling of 3. Ana Reyes and Elena Cordova each have room for one more project, making them the right assignments for any new wins from the prospecting pipeline. Marco Silva is near capacity with Casa Nostra at 88% completion.</div>
+      </div>
+      <div class="section-header"><h2 class="section-title">Project Managers</h2><span class="section-count">3 team members</span></div>
+      <div class="team-grid">
+        <div class="team-card"><div class="team-avatar">AR</div><div class="team-name">Ana Reyes</div><div class="team-role">Senior Project Manager</div><div class="team-stats"><div class="team-stat-item"><span class="team-stat-val">2</span><span class="team-stat-label">Active</span></div><div class="team-stat-item"><span class="team-stat-val">$2.15M</span><span class="team-stat-label">Portfolio</span></div><div class="team-stat-item"><span class="team-stat-val">45%</span><span class="team-stat-label">Avg Progress</span></div></div></div>
+        <div class="team-card"><div class="team-avatar">MS</div><div class="team-name">Marco Silva</div><div class="team-role">Project Manager</div><div class="team-stats"><div class="team-stat-item"><span class="team-stat-val">2</span><span class="team-stat-label">Active</span></div><div class="team-stat-item"><span class="team-stat-val">$895K</span><span class="team-stat-label">Portfolio</span></div><div class="team-stat-item"><span class="team-stat-val">72%</span><span class="team-stat-label">Avg Progress</span></div></div></div>
+        <div class="team-card"><div class="team-avatar">EC</div><div class="team-name">Elena Cordova</div><div class="team-role">Project Manager</div><div class="team-stats"><div class="team-stat-item"><span class="team-stat-val">2</span><span class="team-stat-label">Active</span></div><div class="team-stat-item"><span class="team-stat-val">$2.92M</span><span class="team-stat-label">Portfolio</span></div><div class="team-stat-item"><span class="team-stat-val">55%</span><span class="team-stat-label">Avg Progress</span></div></div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ REPORTS ═══════════ -->
+    <div id="view-reports" class="page-view">
+      <div class="page-header"><h1 class="page-title">Reports</h1><p class="page-subtitle">Historical performance and exported summaries</p></div>
+      <div class="reports-empty"><div class="reports-empty-icon">&#9644;</div><h3>Reports are being prepared</h3><p>Q1 2026 financial and utilization reports will be available here once finalized.</p></div>
+    </div>
+
+    <!-- ═══════════ CALENDAR ═══════════ -->
+    <div id="view-calendar" class="page-view">
+      <div class="page-header"><h1 class="page-title">2 Deadlines Within 18 Days; Casa Nostra First on Mar 28</h1><p class="page-subtitle">Upcoming deadlines and project milestones</p><p class="page-updated">Last updated: Mar 15, 2026 at 9:00 AM</p></div>
+      <div class="section-header"><h2 class="section-title">Upcoming Deadlines</h2><span class="section-count">Next 90 days</span></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Date</th><th>Project</th><th>Milestone</th><th>PM</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Mar 28</strong></td><td class="company-name">Casa Nostra</td><td>Final delivery</td><td>Marco Silva</td><td><span class="status-badge status-hot">13 days</span></td></tr>
+            <tr><td><strong>Apr 2</strong></td><td class="company-name">Meridian Tower</td><td><abbr title="Construction Documents">CD</abbr> submission</td><td>Ana Reyes</td><td><span class="status-badge status-warm">18 days</span></td></tr>
+            <tr><td><strong>May 20</strong></td><td class="company-name">Grove Montessori</td><td><abbr title="Construction Documents">CD</abbr> package complete</td><td>Elena Cordova</td><td><span class="status-badge status-cold">66 days</span></td></tr>
+            <tr><td><strong>Jun 15</strong></td><td class="company-name">Coral Gables Learning</td><td><abbr title="Design Development">DD</abbr> review</td><td>Elena Cordova</td><td><span class="status-badge status-cold">92 days</span></td></tr>
+            <tr><td><strong>Jul 10</strong></td><td class="company-name">South Beach Hotel Bar</td><td><abbr title="Design Development">DD</abbr> package complete</td><td>Marco Silva</td><td><span class="status-badge status-cold">117 days</span></td></tr>
+            <tr><td><strong>Sep 1</strong></td><td class="company-name">Wynwood Loft</td><td>Schematic review</td><td>Ana Reyes</td><td><span class="status-badge status-cold">170 days</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ BUILDER (Power BI style) ═══════════ -->
+    <div id="view-builder" class="page-view">
+      <div class="page-header">
+        <h1 class="page-title">Build Your Dashboard</h1>
+        <p class="page-subtitle">Drag widgets from the palette onto the canvas to create a custom view</p>
+      </div>
+      <div class="builder-actions">
+        <button class="btn btn-secondary" onclick="clearCanvas()">Clear Canvas</button>
+        <button class="btn btn-secondary" onclick="loadPreset('executive')">Load: Executive Summary</button>
+        <button class="btn btn-secondary" onclick="loadPreset('financial')">Load: Financial Overview</button>
+        <button class="btn btn-secondary" onclick="loadPreset('pipeline')">Load: Pipeline Tracker</button>
+      </div>
+      <div class="builder-layout">
+        <div class="builder-palette">
+          <h3>Widget Palette</h3>
+          <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;">Drag or click to add</p>
+
+          <div class="palette-section-label">KPI Cards</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-revenue" onclick="addWidget('kpi-revenue')"><span class="palette-icon">&#9632;</span> Revenue</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-profit" onclick="addWidget('kpi-profit')"><span class="palette-icon">&#9632;</span> Net Profit</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-projects" onclick="addWidget('kpi-projects')"><span class="palette-icon">&#9632;</span> Active Projects</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-pipeline" onclick="addWidget('kpi-pipeline')"><span class="palette-icon">&#9632;</span> Pipeline Value</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-margin" onclick="addWidget('kpi-margin')"><span class="palette-icon">&#9632;</span> Profit Margin</div>
+          <div class="palette-item" draggable="true" data-widget="kpi-receivables" onclick="addWidget('kpi-receivables')"><span class="palette-icon">&#9632;</span> Receivables</div>
+
+          <div class="palette-section-label">Charts</div>
+          <div class="palette-item" draggable="true" data-widget="chart-rev-project" onclick="addWidget('chart-rev-project')"><span class="palette-icon">&#9614;</span> Revenue by Project</div>
+          <div class="palette-item" draggable="true" data-widget="chart-expenses" onclick="addWidget('chart-expenses')"><span class="palette-icon">&#9614;</span> Expenses Breakdown</div>
+          <div class="palette-item" draggable="true" data-widget="chart-monthly" onclick="addWidget('chart-monthly')"><span class="palette-icon">&#9614;</span> Monthly Trend</div>
+          <div class="palette-item" draggable="true" data-widget="chart-margin" onclick="addWidget('chart-margin')"><span class="palette-icon">&#9614;</span> Margin by Project</div>
+
+          <div class="palette-section-label">Tables</div>
+          <div class="palette-item" draggable="true" data-widget="table-leads" onclick="addWidget('table-leads')"><span class="palette-icon">&#9776;</span> Hot Leads</div>
+          <div class="palette-item" draggable="true" data-widget="table-invoices" onclick="addWidget('table-invoices')"><span class="palette-icon">&#9776;</span> Outstanding Invoices</div>
+          <div class="palette-item" draggable="true" data-widget="table-deadlines" onclick="addWidget('table-deadlines')"><span class="palette-icon">&#9776;</span> Upcoming Deadlines</div>
+
+          <div class="palette-section-label">Other</div>
+          <div class="palette-item" draggable="true" data-widget="insight-box" onclick="addWidget('insight-box')"><span class="palette-icon">&#9733;</span> Insight Callout</div>
+          <div class="palette-item" draggable="true" data-widget="team-summary" onclick="addWidget('team-summary')"><span class="palette-icon">&#9733;</span> Team Workload</div>
+        </div>
+
+        <div class="builder-canvas" id="builderCanvas">
+          <div class="builder-canvas-empty" id="canvasEmpty">
+            <div class="empty-icon">&#9998;</div>
+            <h3>Your canvas is empty</h3>
+            <p>Drag widgets from the palette, or click a preset above to get started.</p>
+          </div>
+          <div class="canvas-grid" id="canvasGrid" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Data ──
+var leads = [
+  {co:'Meridian Group',contact:'Laura Chen',city:'Miami',type:'Office',sqft:'12,400',budget:'$1.2M',status:'hot',touch:'Mar 14',sortBudget:1200000,sortStatus:1},
+  {co:'Alma Hospitality',contact:'Ricardo Vega',city:'Fort Lauderdale',type:'Restaurant',sqft:'3,800',budget:'$420K',status:'hot',touch:'Mar 13',sortBudget:420000,sortStatus:1},
+  {co:'Brickell Academy',contact:'Diane Park',city:'Miami',type:'School',sqft:'18,000',budget:'$2.1M',status:'warm',touch:'Mar 10',sortBudget:2100000,sortStatus:2},
+  {co:'Coral Capital',contact:'James Whitfield',city:'Coral Gables',type:'Office',sqft:'6,200',budget:'$680K',status:'warm',touch:'Mar 9',sortBudget:680000,sortStatus:2},
+  {co:'Luma Dining Co.',contact:'Sofia Navarro',city:'Wynwood',type:'Restaurant',sqft:'2,600',budget:'$310K',status:'warm',touch:'Mar 7',sortBudget:310000,sortStatus:2},
+  {co:'Atlas Ventures',contact:'Michael Torres',city:'Miami Beach',type:'Office',sqft:'9,500',budget:'$950K',status:'cold',touch:'Feb 28',sortBudget:950000,sortStatus:3},
+  {co:'Sunridge Montessori',contact:'Ellen Braun',city:'Coconut Grove',type:'School',sqft:'7,400',budget:'$820K',status:'cold',touch:'Feb 22',sortBudget:820000,sortStatus:3},
+  {co:'The Osborn Hotel',contact:'Natasha Cole',city:'South Beach',type:'Restaurant',sqft:'4,100',budget:'$475K',status:'cold',touch:'Feb 18',sortBudget:475000,sortStatus:3}
+];
+
+var projects = [
+  {name:'Meridian Tower<br>Lobby Redesign',client:'Meridian Group',loc:'Brickell, Miami',type:'Office',phase:'Construction Docs',pct:72,pm:'Ana Reyes',due:'Apr 2, 2026',soon:true,sortDue:20260402},
+  {name:'Casa Nostra<br>Restaurant Interior',client:'Alma Hospitality',loc:'Las Olas, Ft. Lauderdale',type:'Restaurant',phase:'Build',pct:88,pm:'Marco Silva',due:'Mar 28, 2026',soon:true,sortDue:20260328},
+  {name:'Coral Gables<br>Learning Center',client:'Brickell Academy',loc:'Coral Gables, FL',type:'School',phase:'Design Dev',pct:45,pm:'Elena Cordova',due:'Jun 15, 2026',soon:false,sortDue:20260615},
+  {name:'Wynwood Loft<br>Co-working Space',client:'Atlas Ventures',loc:'Wynwood, Miami',type:'Office',phase:'Schematic',pct:18,pm:'Ana Reyes',due:'Sep 1, 2026',soon:false,sortDue:20260901},
+  {name:'South Beach<br>Boutique Hotel Bar',client:'The Osborn Hotel',loc:'South Beach, Miami',type:'Restaurant',phase:'Design Dev',pct:55,pm:'Marco Silva',due:'Jul 10, 2026',soon:false,sortDue:20260710},
+  {name:'Grove Montessori<br>Campus Expansion',client:'Sunridge Montessori',loc:'Coconut Grove, FL',type:'School',phase:'Construction Docs',pct:65,pm:'Elena Cordova',due:'May 20, 2026',soon:false,sortDue:20260520}
+];
+
+// ── Render helpers ──
+function leadRow(l) {
+  return '<tr><td class="company-name">'+l.co+'</td><td class="contact-name">'+l.contact+'</td><td>'+l.city+'</td><td>'+l.type+'</td><td>'+l.sqft+'</td><td>'+l.budget+'</td><td><span class="status-badge status-'+l.status+'">'+l.status.charAt(0).toUpperCase()+l.status.slice(1)+'</span></td><td>'+l.touch+'</td></tr>';
+}
+
+function renderProspectTable(containerId, limit) {
+  var subset = limit ? leads.slice(0, limit) : leads;
+  var sortable = !limit;
+  var html = '<table><thead><tr>';
+  var cols = ['Company','Contact','City','Space Type','Sq Ft','Est. Budget','Status','Last Touch'];
+  var keys = ['co','contact','city','type','sqft','sortBudget','sortStatus','touch'];
+  cols.forEach(function(c, i) {
+    if (sortable) {
+      html += '<th class="sortable" tabindex="0" role="button" data-key="'+keys[i]+'" data-table="'+containerId+'" onclick="sortTable(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();sortTable(this)}">'+c+'</th>';
+    } else {
+      html += '<th>'+c+'</th>';
+    }
+  });
+  html += '</tr></thead><tbody>';
+  subset.forEach(function(l) { html += leadRow(l); });
+  html += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function projectCard(p) {
+  return '<div class="project-card"><div class="project-card-header"><div class="project-name">'+p.name+'</div><span class="project-type-badge">'+p.type+'</span></div><div class="project-meta"><span><strong>Client:</strong> '+p.client+'</span><span><strong>Location:</strong> '+p.loc+'</span></div><div class="project-phase"><span class="phase-label">'+p.phase+'</span><div class="progress-bar-container"><div class="progress-bar-fill" style="width:'+p.pct+'%"></div></div><span class="progress-pct">'+p.pct+'%</span></div><div class="project-footer"><span>PM: <span class="pm-name">'+p.pm+'</span></span><span class="deadline'+(p.soon?' soon':'')+'">Due: '+p.due+'</span></div></div>';
+}
+
+function renderProjectsGrid(containerId, limit) {
+  var subset = limit
+    ? projects.slice().sort(function(a,b){ return a.sortDue - b.sortDue; }).slice(0, limit)
+    : projects;
+  var html = '';
+  subset.forEach(function(p) { html += projectCard(p); });
+  document.getElementById(containerId).innerHTML = html;
+}
+
+// ── Sortable tables ──
+var sortState = {};
+function sortTable(th) {
+  var key = th.getAttribute('data-key');
+  var tableId = th.getAttribute('data-table');
+  var stateKey = tableId + '_' + key;
+  var dir = sortState[stateKey] === 'asc' ? 'desc' : 'asc';
+
+  // Reset all headers in this table
+  th.closest('thead').querySelectorAll('th').forEach(function(h) {
+    h.classList.remove('asc','desc');
+  });
+  th.classList.add(dir);
+  sortState[stateKey] = dir;
+
+  var sorted = leads.slice().sort(function(a, b) {
+    var va = a[key], vb = b[key];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  var tbody = document.getElementById(tableId).querySelector('tbody');
+  tbody.innerHTML = '';
+  sorted.forEach(function(l) { tbody.innerHTML += leadRow(l); });
+}
+
+// ── Navigation ──
+function switchView(viewName) {
+  document.querySelectorAll('.page-view').forEach(function(v) { v.classList.remove('active'); });
+  var t = document.getElementById('view-' + viewName);
+  if (t) t.classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(function(a) {
+    a.classList.remove('active');
+    if (a.getAttribute('data-view') === viewName) a.classList.add('active');
+  });
+  document.querySelectorAll('.sidebar-nav a').forEach(function(a) {
+    a.classList.remove('active');
+    if (a.getAttribute('data-view') === viewName) a.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+
+// ── Builder: widget templates ──
+var widgetTemplates = {
+  'kpi-revenue': {title:'Q1 Revenue',wide:false,html:'<div class="kpi-value">$1.42M</div><div class="kpi-delta up">&#9650; 22% vs. Q1 2025</div><div class="kpi-target" style="margin-top:0.4rem">Annual target: $5.8M</div>'},
+  'kpi-profit': {title:'Net Profit',wide:false,html:'<div class="kpi-value">$454K</div><div class="kpi-delta up">&#9650; 28% vs. Q1 2025</div><div class="kpi-target" style="margin-top:0.4rem">Margin: 32% (target: 30%)</div>'},
+  'kpi-projects': {title:'Active Projects',wide:false,html:'<div class="kpi-value">6</div><div class="kpi-delta up">&#9650; 2 from last quarter</div><div class="kpi-target" style="margin-top:0.4rem">Target: 8 by Q2</div>'},
+  'kpi-pipeline': {title:'Pipeline Value',wide:false,html:'<div class="kpi-value">$4.7M</div><div class="kpi-delta up">&#9650; 18% vs. Q4 2025</div><div class="kpi-target" style="margin-top:0.4rem">Q1 target: $4.0M (exceeded)</div>'},
+  'kpi-margin': {title:'Profit Margin',wide:false,html:'<div class="kpi-value">32%</div><div class="kpi-delta up">&#9650; 2pp above target</div><div class="kpi-target" style="margin-top:0.4rem">Target: 30%</div>'},
+  'kpi-receivables': {title:'Outstanding Receivables',wide:false,html:'<div class="kpi-value">$287K</div><div class="kpi-delta down">&#9660; 2 invoices overdue</div><div class="kpi-target" style="margin-top:0.4rem">Avg collection: 34 days</div>'},
+  'chart-rev-project': {title:'Revenue by Project (Q1)',wide:false,html:'<div class="bar-chart-row"><span class="bar-chart-label">Meridian</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:78%"></div></div><span class="bar-chart-val">$380K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Casa Nostra</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:62%"></div></div><span class="bar-chart-val">$298K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Coral Gables</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:48%"></div></div><span class="bar-chart-val">$235K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Grove</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:42%"></div></div><span class="bar-chart-val">$204K</span></div><div class="bar-chart-row"><span class="bar-chart-label">South Beach</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:35%"></div></div><span class="bar-chart-val">$172K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Wynwood</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:27%"></div></div><span class="bar-chart-val">$131K</span></div>'},
+  'chart-expenses': {title:'Expenses Breakdown (Q1)',wide:false,html:'<div class="bar-chart-row"><span class="bar-chart-label">Salaries</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:55%"></div></div><span class="bar-chart-val">$528K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Subcontractors</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:22%"></div></div><span class="bar-chart-val">$214K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Office</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:9%"></div></div><span class="bar-chart-val">$87K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Software</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:5%"></div></div><span class="bar-chart-val">$48K</span></div><div class="bar-chart-row"><span class="bar-chart-label">Marketing</span><div class="bar-chart-track"><div class="bar-chart-fill accent" style="width:5%"></div></div><span class="bar-chart-val">$52K</span></div>'},
+  'chart-monthly': {title:'Monthly Revenue Trend (Q1)',wide:false,html:'<div class="mini-bar"><div class="mini-bar-col" style="height:70%"></div><div class="mini-bar-col" style="height:55%"></div><div class="mini-bar-col" style="height:80%"></div><div class="mini-bar-col" style="height:52%"></div><div class="mini-bar-col" style="height:88%"></div><div class="mini-bar-col" style="height:54%"></div></div><div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);margin-top:0.4rem"><span>Jan</span><span>Feb</span><span>Mar (proj.)</span></div><div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem">&#9632; Revenue &nbsp; <span style="opacity:0.6">&#9632;</span> Expenses</div>'},
+  'chart-margin': {title:'Profit Margin by Project',wide:false,html:'<div class="bar-chart-row"><span class="bar-chart-label">Meridian</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:38%"></div></div><span class="bar-chart-val">38%</span></div><div class="bar-chart-row"><span class="bar-chart-label">Casa Nostra</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:35%"></div></div><span class="bar-chart-val">35%</span></div><div class="bar-chart-row"><span class="bar-chart-label">S. Beach</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:33%"></div></div><span class="bar-chart-val">33%</span></div><div class="bar-chart-row"><span class="bar-chart-label">Coral Gables</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:30%"></div></div><span class="bar-chart-val">30%</span></div><div class="bar-chart-row"><span class="bar-chart-label">Grove</span><div class="bar-chart-track"><div class="bar-chart-fill green" style="width:28%"></div></div><span class="bar-chart-val">28%</span></div><div class="bar-chart-row"><span class="bar-chart-label">Wynwood</span><div class="bar-chart-track"><div class="bar-chart-fill" style="width:24%"></div></div><span class="bar-chart-val">24%</span></div>'},
+  'table-leads': {title:'Hot Leads',wide:true,html:'<table><thead><tr><th>Company</th><th>Budget</th><th>Status</th><th>Last Touch</th></tr></thead><tbody><tr><td class="company-name">Meridian Group</td><td>$1.2M</td><td><span class="status-badge status-hot">Hot</span></td><td>Mar 14</td></tr><tr><td class="company-name">Alma Hospitality</td><td>$420K</td><td><span class="status-badge status-hot">Hot</span></td><td>Mar 13</td></tr><tr><td class="company-name">Brickell Academy</td><td>$2.1M</td><td><span class="status-badge status-warm">Warm</span></td><td>Mar 10</td></tr></tbody></table>'},
+  'table-invoices': {title:'Outstanding Invoices',wide:true,html:'<table><thead><tr><th>Invoice</th><th>Client</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead><tbody><tr><td class="text-bold">INV-041</td><td>Coral Capital</td><td class="text-right">$82K</td><td>Mar 10</td><td><span class="status-badge status-hot">Overdue</span></td></tr><tr><td class="text-bold">INV-038</td><td>Brickell Academy</td><td class="text-right">$65K</td><td>Mar 1</td><td><span class="status-badge status-hot">Overdue</span></td></tr><tr><td class="text-bold">INV-045</td><td>Meridian Group</td><td class="text-right">$95K</td><td>Mar 31</td><td><span class="status-badge status-warm">Due Soon</span></td></tr></tbody></table>'},
+  'table-deadlines': {title:'Upcoming Deadlines',wide:true,html:'<table><thead><tr><th>Date</th><th>Project</th><th>Milestone</th><th>PM</th></tr></thead><tbody><tr><td><strong>Mar 28</strong></td><td>Casa Nostra</td><td>Final delivery</td><td>Marco Silva</td></tr><tr><td><strong>Apr 2</strong></td><td>Meridian Tower</td><td>CD submission</td><td>Ana Reyes</td></tr><tr><td><strong>May 20</strong></td><td>Grove Montessori</td><td>CD package</td><td>Elena Cordova</td></tr></tbody></table>'},
+  'insight-box': {title:'Key Insight',wide:true,html:'<div style="font-size:0.85rem;line-height:1.55;color:var(--dark-text)">Two hot leads (Meridian Group, Alma Hospitality) represent $1.6M in potential new revenue. Converting both would push Q2 pipeline above $6M, exceeding the growth plan by 15%. Three cold leads need re-engagement within the next 7 days.</div>'},
+  'team-summary': {title:'Team Workload',wide:true,html:'<div style="display:flex;gap:2rem;font-size:0.82rem"><div><strong>Ana Reyes</strong><br>2 projects, 45% avg<br>Capacity: 1 more</div><div><strong>Marco Silva</strong><br>2 projects, 72% avg<br>Near capacity</div><div><strong>Elena Cordova</strong><br>2 projects, 55% avg<br>Capacity: 1 more</div></div>'}
+};
+
+// ── Builder: add, remove, save, load ──
+function getCanvasWidgets() {
+  var widgets = [];
+  document.querySelectorAll('#canvasGrid .canvas-widget').forEach(function(w) {
+    var type = w.getAttribute('data-widget-type');
+    if (type) widgets.push(type);
+  });
+  return widgets;
+}
+
+function saveCanvas() {
+  var widgets = getCanvasWidgets();
+  try { localStorage.setItem('aispaces_builder', JSON.stringify(widgets)); } catch(e) {}
+}
+
+function loadSavedCanvas() {
+  try {
+    var saved = localStorage.getItem('aispaces_builder');
+    if (saved) {
+      var widgets = JSON.parse(saved);
+      if (widgets && widgets.length > 0) {
+        widgets.forEach(function(w) { addWidget(w, true); });
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function addWidget(type, skipSave) {
+  var tpl = widgetTemplates[type];
+  if (!tpl) return;
+  var grid = document.getElementById('canvasGrid');
+  var empty = document.getElementById('canvasEmpty');
+  empty.style.display = 'none';
+  grid.style.display = 'grid';
+
+  var w = document.createElement('div');
+  w.className = 'canvas-widget' + (tpl.wide ? ' full-width' : '');
+  w.setAttribute('data-widget-type', type);
+  w.innerHTML = '<div class="widget-header"><div class="widget-title">' + tpl.title + '</div><button class="widget-remove" onclick="removeWidget(this)" title="Remove">&times;</button></div><div class="widget-body">' + tpl.html + '</div>';
+  grid.appendChild(w);
+  if (!skipSave) saveCanvas();
+}
+
+function removeWidget(btn) {
+  var w = btn.closest('.canvas-widget');
+  w.style.opacity = '0';
+  w.style.transform = 'translateY(-8px)';
+  w.style.transition = 'all 0.2s ease';
+  setTimeout(function() {
+    w.remove();
+    var grid = document.getElementById('canvasGrid');
+    if (grid.children.length === 0) {
+      grid.style.display = 'none';
+      document.getElementById('canvasEmpty').style.display = 'flex';
+    }
+    saveCanvas();
+  }, 200);
+}
+
+function clearCanvas() {
+  var grid = document.getElementById('canvasGrid');
+  grid.innerHTML = '';
+  grid.style.display = 'none';
+  document.getElementById('canvasEmpty').style.display = 'flex';
+  saveCanvas();
+}
+
+function loadPreset(name) {
+  clearCanvas();
+  var sets = {
+    executive: ['kpi-revenue','kpi-profit','kpi-projects','kpi-pipeline','chart-rev-project','chart-margin','insight-box','table-deadlines'],
+    financial: ['kpi-revenue','kpi-profit','kpi-margin','kpi-receivables','chart-rev-project','chart-expenses','chart-monthly','table-invoices'],
+    pipeline: ['kpi-pipeline','kpi-projects','kpi-margin','kpi-receivables','table-leads','chart-rev-project','table-deadlines','team-summary']
+  };
+  var list = sets[name] || [];
+  list.forEach(function(w) { addWidget(w, true); });
+  saveCanvas();
+}
+
+// ── Drag and drop ──
+document.querySelectorAll('.palette-item').forEach(function(item) {
+  item.addEventListener('dragstart', function(e) {
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-widget'));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+});
+
+var canvas = document.getElementById('builderCanvas');
+canvas.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  canvas.classList.add('drag-over');
+});
+canvas.addEventListener('dragleave', function() {
+  canvas.classList.remove('drag-over');
+});
+canvas.addEventListener('drop', function(e) {
+  e.preventDefault();
+  canvas.classList.remove('drag-over');
+  var type = e.dataTransfer.getData('text/plain');
+  if (type) addWidget(type);
+});
+
+// ── Init ──
+renderProspectTable('prospect-table-dashboard', 3);
+renderProspectTable('prospect-table-prospecting');
+renderProjectsGrid('projects-grid-dashboard', 3);
+renderProjectsGrid('projects-grid-projects');
+loadSavedCanvas();
+switchView('dashboard');
+</script>
+</body>
+</html>
